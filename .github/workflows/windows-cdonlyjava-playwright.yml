@@ -77,10 +77,10 @@ jobs:
           $javaArgs = @(
             "-javaagent:$agent"
             "-Dsl.tokenFile=$tokenFile"
-            "-Dsl.appName=calculator-demo"
+            "-Dsl.appName=sample_java"
             "-Dsl.labId=$($env:SL_LAB_ID)"
             "-Dsl.buildname=${{ github.run_number }}"
-            "-Dsl.branchname=${{ github.ref_name }}"
+            "-Dsl.branchname=windows"
             "-Dsl.includes=com.example.*"
             "-Dsl.log.toConsole=true"
             "-Dsl.log.level=info"
@@ -129,8 +129,8 @@ jobs:
           CI: true
           SL_TOKEN: ${{ secrets.SL_TOKEN }}
           SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
-          SL_TEST_STAGE: github-actions
-          SL_TEST_PROJECT_ID: calculator-demo
+          SL_TEST_STAGE: playwright
+          SL_TEST_PROJECT_ID: sample_java
           SL_BUILD_SESSION_ID: ${{ secrets.SL_BUILD_SESSION_ID }}
           SL_PROXY: ${{ secrets.SL_PROXY }}
         run: npm test
