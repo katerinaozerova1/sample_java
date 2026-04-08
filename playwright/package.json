@@ -1,0 +1,14 @@
+{
+  "name": "calculator-playwright-tests",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "sealights:rewrite-imports": "npx sealights-playwright-plugin replace-imports --test-dir ./tests"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "sealights-playwright-plugin": "^2.0.137"
+  }
+}

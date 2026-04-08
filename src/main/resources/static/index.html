@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 28rem; margin: 2rem auto; }
+    label { display: block; margin-top: 0.75rem; }
+    button { margin-top: 1rem; padding: 0.5rem 1rem; }
+    #result { margin-top: 1rem; font-size: 1.25rem; font-weight: 600; min-height: 1.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Calculator</h1>
+  <p>Simple Java (Spring Boot) backend — Playwright drives this UI.</p>
+
+  <label for="a">First number</label>
+  <input id="a" type="number" value="2" data-testid="input-a" />
+
+  <label for="op">Operation</label>
+  <select id="op" data-testid="select-op">
+    <option value="+">+</option>
+    <option value="-">−</option>
+    <option value="*">×</option>
+    <option value="/">÷</option>
+  </select>
+
+  <label for="b">Second number</label>
+  <input id="b" type="number" value="3" data-testid="input-b" />
+
+  <div>
+    <button type="button" id="go" data-testid="btn-calculate">Calculate</button>
+  </div>
+
+  <div id="result" data-testid="result"></div>
+
+  <script>
+    document.getElementById('go').addEventListener('click', async () => {
+      const a = parseFloat(document.getElementById('a').value);
+      const b = parseFloat(document.getElementById('b').value);
+      const op = document.getElementById('op').value;
+      const resEl = document.getElementById('result');
+      resEl.textContent = '…';
+      try {
+        const r = await fetch('/api/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ a, b, op }),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        resEl.textContent = Number.isNaN(data.result) ? 'NaN' : String(data.result);
+      } catch (e) {
+        resEl.textContent = 'Error';
+      }
+    });
+  </script>
+</body>
+</html>
