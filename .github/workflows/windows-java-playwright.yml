@@ -1,0 +1,143 @@
+# Same pipeline as ci.yml but on windows-latest (PowerShell) to reproduce OS-specific SeaLights / Playwright behavior.
+# Secrets: SL_TOKEN, SL_LAB_ID (Repository → Settings → Secrets and variables → Actions)
+name: CI (Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create SeaLights token file
+        env:
+          SL_TOKEN: ${{ secrets.SL_TOKEN }}
+        run: |
+          $path = Join-Path $env:GITHUB_WORKSPACE "sltoken.txt"
+          [IO.File]::WriteAllText($path, $env:SL_TOKEN)
+
+      - name: Verify Actions secrets are available
+        env:
+          SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
+        run: |
+          $tokenPath = Join-Path $env:GITHUB_WORKSPACE "sltoken.txt"
+          if (-not (Test-Path $tokenPath) -or (Get-Item $tokenPath).Length -eq 0) {
+            Write-Host "::error::SL_TOKEN is empty or not set."
+            exit 1
+          }
+          if ([string]::IsNullOrWhiteSpace($env:SL_LAB_ID)) {
+            Write-Host "::error::SL_LAB_ID is empty or not set."
+            exit 1
+          }
+
+      - name: Download SeaLights CD Agent
+        run: |
+          $zip = Join-Path $env:GITHUB_WORKSPACE "sl-cd-agent.zip"
+          $dest = Join-Path $env:GITHUB_WORKSPACE "sealights-cd-agent"
+          Invoke-WebRequest -Uri "https://agents.sealights.co/sl-cd-agent/sl-cd-agent-latest.zip" -OutFile $zip
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Expand-Archive -Path $zip -DestinationPath $dest -Force
+          Get-ChildItem $dest
+          $jar = Join-Path $dest "sl-cd-agent.jar"
+          if (-not (Test-Path $jar)) { throw "sl-cd-agent.jar not found under sealights-cd-agent" }
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build application
+        run: mvn -B clean package -DskipTests
+
+      - name: Start calculator app (SeaLights CD javaagent)
+        env:
+          SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
+          SL_PROXY: ${{ secrets.SL_PROXY }}
+        run: |
+          $ws = $env:GITHUB_WORKSPACE
+          $jar = Get-ChildItem (Join-Path $ws "target") "calculator-demo-*.jar" | Select-Object -First 1
+          $agent = Join-Path $ws "sealights-cd-agent\sl-cd-agent.jar"
+          $tokenFile = Join-Path $ws "sltoken.txt"
+
+          if (-not (Test-Path $tokenFile) -or [string]::IsNullOrWhiteSpace($env:SL_LAB_ID)) {
+            Write-Host "::error::Secrets check failed unexpectedly."
+            exit 1
+          }
+
+          $javaArgs = @(
+            "-javaagent:$agent"
+            "-Dsl.tokenFile=$tokenFile"
+            "-Dsl.appName=calculator-demo"
+            "-Dsl.labId=$($env:SL_LAB_ID)"
+            "-Dsl.buildname=${{ github.run_number }}"
+            "-Dsl.branchname=${{ github.ref_name }}"
+            "-Dsl.includes=com.example.*"
+            "-Dsl.log.toConsole=true"
+            "-Dsl.log.level=info"
+            "--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED"
+            "-jar"
+            $jar.FullName
+          )
+          if ($env:SL_PROXY) {
+            $javaArgs += "-Dsl.proxy=$($env:SL_PROXY)"
+          }
+
+          Write-Host "Starting JVM with SeaLights CD Agent (buildname=${{ github.run_number }}, branch=${{ github.ref_name }})"
+          $p = Start-Process -FilePath "java" -ArgumentList $javaArgs -PassThru -WindowStyle Hidden
+          Add-Content -Path $env:GITHUB_ENV -Value "APP_PID=$($p.Id)"
+
+          for ($i = 0; $i -lt 90; $i++) {
+            try {
+              Invoke-WebRequest -Uri "http://127.0.0.1:8080/" -UseBasicParsing -TimeoutSec 2 | Out-Null
+              exit 0
+            } catch { }
+            Start-Sleep -Seconds 1
+          }
+          Write-Host "::error::App did not become ready in time"
+          exit 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: playwright/package.json
+
+      - name: Install Playwright deps
+        working-directory: playwright
+        run: |
+          if (Test-Path package-lock.json) { npm ci } else { npm install }
+
+      - name: Install Chromium
+        working-directory: playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Playwright tests (sealights-playwright-plugin)
+        working-directory: playwright
+        env:
+          BASE_URL: http://127.0.0.1:8080
+          CI: true
+          SL_TOKEN: ${{ secrets.SL_TOKEN }}
+          SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
+          SL_TEST_STAGE: github-actions
+          SL_TEST_PROJECT_ID: calculator-demo
+          SL_BUILD_SESSION_ID: ${{ secrets.SL_BUILD_SESSION_ID }}
+          SL_PROXY: ${{ secrets.SL_PROXY }}
+        run: npm test
+
+      - name: Stop app
+        if: always()
+        run: |
+          if ($env:APP_PID) {
+            Stop-Process -Id $env:APP_PID -Force -ErrorAction SilentlyContinue
+          }
