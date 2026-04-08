@@ -79,7 +79,7 @@ jobs:
               "-Dsl.appName=sample_java"
               "-Dsl.labId=${SL_LAB_ID}"
               "-Dsl.buildname=${{ github.run_number }}"
-              "-Dsl.branchname=${{ github.ref_name }}"
+              "-Dsl.branchname=ubuntu"
               "-Dsl.includes=com.example.*"
               "-Dsl.log.toConsole=true"
               "-Dsl.log.level=info"
