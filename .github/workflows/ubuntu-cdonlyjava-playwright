@@ -1,0 +1,137 @@
+# Same as ci.yml, but verbose SeaLights / Node test-runner logging for troubleshooting.
+# Run manually: Actions → "CI (debug logs)" → Run workflow
+#
+# Playwright step sets:
+#   NODE_DEBUG=sl          — Node debug channel for SeaLights-related internals (slnodejs / plugin)
+#   SL_LOG_LEVEL=debug     — SeaLights client log level
+#
+# Secrets: same as ci.yml (SL_TOKEN, SL_LAB_ID, optional SL_PROXY, SL_BUILD_SESSION_ID)
+name: CI (debug logs)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create SeaLights token file
+        run: |
+          echo -n "${{ secrets.SL_TOKEN }}" > sltoken.txt
+          chmod 600 sltoken.txt
+
+      - name: Verify Actions secrets are available
+        env:
+          SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
+        run: |
+          if [ ! -s sltoken.txt ]; then
+            echo "::error::SL_TOKEN is empty or not set for this workflow run."
+            echo "Fix: Repository → Settings → Secrets and variables → **Actions** → Repository secrets → create SL_TOKEN"
+            echo "(Not Dependabot / Codespaces. If using Environment secrets, add 'environment: <name>' to this job.)"
+            exit 1
+          fi
+          if [ -z "$SL_LAB_ID" ]; then
+            echo "::error::SL_LAB_ID is empty or not set."
+            echo "Fix: same Actions → Repository secrets page → create SL_LAB_ID"
+            exit 1
+          fi
+
+      - name: Download SeaLights CD Agent
+        run: |
+          curl -fsSL -o sl-cd-agent.zip "https://agents.sealights.co/sl-cd-agent/sl-cd-agent-latest.zip"
+          unzip -q sl-cd-agent.zip -d sealights-cd-agent
+          ls -la sealights-cd-agent/
+          test -f sealights-cd-agent/sl-cd-agent.jar
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build application
+        run: mvn -B clean package -DskipTests
+
+      - name: Start calculator app (SeaLights CD javaagent)
+        env:
+          SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
+          SL_PROXY: ${{ secrets.SL_PROXY }}
+        run: |
+          set -e
+          JAR=$(ls target/calculator-demo-*.jar | head -1)
+          AGENT="${GITHUB_WORKSPACE}/sealights-cd-agent/sl-cd-agent.jar"
+          TOKEN_FILE="${GITHUB_WORKSPACE}/sltoken.txt"
+
+          if [ ! -s "$TOKEN_FILE" ] || [ -z "$SL_LAB_ID" ]; then
+            echo "::error::Secrets check failed unexpectedly; token file or SL_LAB_ID empty."
+            exit 1
+          else
+            echo "Starting JVM with SeaLights CD Agent (sl.appName=calculator-demo, sl.labId from secret, sl.buildname=${{ github.run_number }}, sl.branchname=${{ github.ref_name }})"
+            JAVA_OPTS=(
+              "-javaagent:${AGENT}"
+              "-Dsl.tokenFile=${TOKEN_FILE}"
+              "-Dsl.appName=sample_java"
+              "-Dsl.labId=${SL_LAB_ID}"
+              "-Dsl.buildname=${{ github.run_number }}"
+              "-Dsl.branchname=${{ github.ref_name }}"
+              "-Dsl.includes=com.example.*"
+              "-Dsl.log.toConsole=true"
+              "-Dsl.log.level=info"
+              "--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED"
+            )
+            if [ -n "$SL_PROXY" ]; then
+              JAVA_OPTS+=("-Dsl.proxy=${SL_PROXY}")
+            fi
+            java "${JAVA_OPTS[@]}" -jar "$JAR" &
+          fi
+
+          echo "APP_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App did not become ready in time"
+          exit 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: playwright/package.json
+
+      - name: Install Playwright deps
+        working-directory: playwright
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Install Chromium
+        working-directory: playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Playwright tests (sealights-playwright-plugin, debug logging)
+        working-directory: playwright
+        env:
+          BASE_URL: http://127.0.0.1:8080
+          CI: true
+          NODE_DEBUG: sl
+          SL_LOG_LEVEL: debug
+          SL_TOKEN: ${{ secrets.SL_TOKEN }}
+          SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
+          SL_TEST_STAGE: playwright
+          SL_TEST_PROJECT_ID: sample_java
+          SL_BUILD_SESSION_ID: ${{ secrets.SL_BUILD_SESSION_ID }}
+          SL_PROXY: ${{ secrets.SL_PROXY }}
+        run: npm test
+
+      - name: Stop app
+        if: always()
+        run: kill "$APP_PID" 2>/dev/null || true
