@@ -76,7 +76,7 @@ jobs:
             JAVA_OPTS=(
               "-javaagent:${AGENT}"
               "-Dsl.tokenFile=${TOKEN_FILE}"
-              "-Dsl.appName=sample_java"
+              "-Dsl.appName=calculator-demo"
               "-Dsl.labId=${SL_LAB_ID}"
               "-Dsl.buildname=${{ github.run_number }}"
               "-Dsl.branchname=ubuntu-playwright"
