@@ -1,6 +1,6 @@
 # Same pipeline as ci.yml but on windows-latest (PowerShell) to reproduce OS-specific SeaLights / Playwright behavior.
 # Secrets: SL_TOKEN, SL_LAB_ID (Repository → Settings → Secrets and variables → Actions)
-name: Windows-Java_Playwright
+name: Windows-Java-Playwright
 
 on:
   workflow_dispatch:
