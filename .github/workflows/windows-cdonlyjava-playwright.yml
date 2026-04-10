@@ -1,6 +1,6 @@
 # Same pipeline as ci.yml but on windows-latest (PowerShell) to reproduce OS-specific SeaLights / Playwright behavior.
 # Secrets: SL_TOKEN, SL_LAB_ID (Repository → Settings → Secrets and variables → Actions)
-name: CI (Windows)
+name: Windows-Java_Playwright
 
 on:
   workflow_dispatch:
@@ -77,10 +77,10 @@ jobs:
           $javaArgs = @(
             "-javaagent:$agent"
             "-Dsl.tokenFile=$tokenFile"
-            "-Dsl.appName=sample_java"
+            "-Dsl.appName=calculator-demo"
             "-Dsl.labId=$($env:SL_LAB_ID)"
             "-Dsl.buildname=${{ github.run_number }}"
-            "-Dsl.branchname=windows"
+            "-Dsl.branchname=windows-playwright"
             "-Dsl.includes=com.example.*"
             "-Dsl.log.toConsole=true"
             "-Dsl.log.level=info"
@@ -130,7 +130,7 @@ jobs:
           SL_TOKEN: ${{ secrets.SL_TOKEN }}
           SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
           SL_TEST_STAGE: playwright
-          SL_TEST_PROJECT_ID: sample_java
+          SL_TEST_PROJECT_ID: sample-java-playwright
           SL_BUILD_SESSION_ID: ${{ secrets.SL_BUILD_SESSION_ID }}
           SL_PROXY: ${{ secrets.SL_PROXY }}
         run: npm test
