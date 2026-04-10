@@ -2,7 +2,7 @@
  * Exercises the Spring Boot calculator through the same UI as Playwright:
  * POST /api/calculate via fetch from index.html → CalculatorController.calculate
  *
- * SeaLights: test stage / build session / token come from env or CLI (see wdio.conf.mjs + CI).
+ * SeaLights: test stage, lab, token from env or CLI (see wdio.conf.mjs + CI).
  */
 import { strict as assert } from 'node:assert';
 import { expect } from '@wdio/globals';
