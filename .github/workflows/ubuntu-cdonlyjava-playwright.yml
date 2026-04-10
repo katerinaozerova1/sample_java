@@ -6,7 +6,7 @@
 #   SL_LOG_LEVEL=debug     — SeaLights client log level
 #
 # Secrets: same as ci.yml (SL_TOKEN, SL_LAB_ID, optional SL_PROXY, SL_BUILD_SESSION_ID)
-name: CI (debug logs)
+name: Ubuntu-Java-Playwright
 
 on:
   workflow_dispatch:
@@ -79,7 +79,7 @@ jobs:
               "-Dsl.appName=sample_java"
               "-Dsl.labId=${SL_LAB_ID}"
               "-Dsl.buildname=${{ github.run_number }}"
-              "-Dsl.branchname=ubuntu"
+              "-Dsl.branchname=ubuntu-playwright"
               "-Dsl.includes=com.example.*"
               "-Dsl.log.toConsole=true"
               "-Dsl.log.level=info"
@@ -127,7 +127,7 @@ jobs:
           SL_TOKEN: ${{ secrets.SL_TOKEN }}
           SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
           SL_TEST_STAGE: playwright
-          SL_TEST_PROJECT_ID: sample_java
+          SL_TEST_PROJECT_ID: sample-java-playwright
           SL_BUILD_SESSION_ID: ${{ secrets.SL_BUILD_SESSION_ID }}
           SL_PROXY: ${{ secrets.SL_PROXY }}
         run: npm test
