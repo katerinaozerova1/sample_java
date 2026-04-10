@@ -12,7 +12,7 @@
 # Docs:
 #   CD Java: https://docs.sealights.io/knowledgebase/setup-and-configuration/sealights-agents-and-plugins/cd-agent/cd-agent-for-java-application
 #   WDIO plugin: https://www.npmjs.com/package/sealights-webdriverio-plugin
-name: CI WebdriverIO SeaLights
+name: Ubuntu-Java-WebdriverIO
 
 on:
   workflow_dispatch:
@@ -95,6 +95,17 @@ jobs:
           echo "App did not become ready in time"
           exit 1
 
+      - name: Install Google Chrome (if missing; ubuntu runners usually ship a recent stable)
+        run: |
+          set -e
+          if command -v google-chrome-stable >/dev/null 2>&1; then
+            google-chrome-stable --version
+            exit 0
+          fi
+          wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get update
+          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -107,16 +118,13 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-      - name: Install Google Chrome (Chromedriver service needs a Chrome binary)
+      - name: Align npm chromedriver with installed Chrome (major must match)
+        working-directory: webdriverio
         run: |
           set -e
-          if command -v google-chrome-stable >/dev/null 2>&1; then
-            google-chrome-stable --version
-            exit 0
-          fi
-          wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt-get update
-          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+          CHROME_MAJOR=$(google-chrome-stable --version | sed -E 's/.* ([0-9]+)\..*/\1/')
+          echo "Chrome major: ${CHROME_MAJOR} — installing matching chromedriver"
+          npm install "chromedriver@${CHROME_MAJOR}" --save-dev
 
       - name: Run WebdriverIO tests (sealights-webdriverio-plugin)
         working-directory: webdriverio
