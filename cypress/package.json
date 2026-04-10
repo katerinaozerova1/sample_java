@@ -1,0 +1,17 @@
+{
+  "name": "calculator-cypress-tests",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "cypress run --browser chrome --headless",
+    "test:open": "cypress open",
+    "test:sealights": "npx sealights-cypress-plugin npx cypress run --browser chrome --headless"
+  },
+  "devDependencies": {
+    "cypress": "^13.17.0",
+    "sealights-cypress-plugin": "^2.0.151"
+  }
+}
