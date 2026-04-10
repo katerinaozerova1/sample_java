@@ -1,8 +1,9 @@
 # WebdriverIO + sealights-webdriverio-plugin against the Spring Boot app instrumented with the SeaLights CD Java agent.
 #
 # Prerequisites (same as ci.yml / Playwright flow):
-#   Repository secrets: SL_TOKEN, SL_LAB_ID, SL_BUILD_SESSION_ID
+#   Repository secrets: SL_TOKEN, SL_LAB_ID (Settings → Secrets and variables → Actions)
 #   Optional: SL_PROXY
+#   Test runners do not pass BuildSessionId; correlation uses token + lab + test stage (per org policy).
 #
 # SeaLights:
 #   - JVM: CD agent (javaagent) — backend coverage while the app serves /api/calculate
@@ -33,7 +34,6 @@ jobs:
       - name: Verify Actions secrets are available
         env:
           SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
-          SL_BUILD_SESSION_ID: ${{ secrets.SL_BUILD_SESSION_ID }}
         run: |
           if [ ! -s sltoken.txt ]; then
             echo "::error::SL_TOKEN is empty or not set."
@@ -41,10 +41,6 @@ jobs:
           fi
           if [ -z "$SL_LAB_ID" ]; then
             echo "::error::SL_LAB_ID is empty or not set."
-            exit 1
-          fi
-          if [ -z "$SL_BUILD_SESSION_ID" ]; then
-            echo "::error::SL_BUILD_SESSION_ID is empty or not set (required for WebDriverIO plugin + CD correlation)."
             exit 1
           fi
 
@@ -76,10 +72,10 @@ jobs:
           JAVA_OPTS=(
             "-javaagent:${AGENT}"
             "-Dsl.tokenFile=${TOKEN_FILE}"
-            "-Dsl.appName=sample_java"
+            "-Dsl.appName=calculator-demo"
             "-Dsl.labId=${SL_LAB_ID}"
             "-Dsl.buildname=${{ github.run_number }}"
-            "-Dsl.branchname=ubuntu"
+            "-Dsl.branchname=ubuntu-wdio"
             "-Dsl.includes=com.example.*"
             "-Dsl.log.toConsole=true"
             "-Dsl.log.level=info"
@@ -128,9 +124,8 @@ jobs:
           BASE_URL: http://127.0.0.1:8080
           CI: true
           SL_TOKENFILE: ${{ github.workspace }}/sltoken.txt
-          SL_TESTSTAGE: webdriverio
-          SL_TESTPROJECTID: sample_java
-          SL_BUILDSESSIONID: ${{ secrets.SL_BUILD_SESSION_ID }}
+          SL_TESTSTAGE: wdio
+          SL_TESTPROJECTID: sample-java-wdio
           SL_LABID: ${{ secrets.SL_LAB_ID }}
           SL_PROXY: ${{ secrets.SL_PROXY }}
           NODE_DEBUG: ''
