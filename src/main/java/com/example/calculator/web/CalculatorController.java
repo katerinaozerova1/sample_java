@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class CalculatorController {
 
   @PostMapping(value = "/api/calculate", consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CalculateResponse calculate(@RequestBody CalculateRequest req) {
-    double a = req.a();
-    double b = req.b();
-    String operator = req.op() == null ? "+" : req.op().trim();
+  public CalculateResponse calculate(@RequestBody CalculateRequest request) {
+    double a = request.a();
+    double b = request.b();
+    String operator = request.op() == null ? "+" : request.op().trim();
     double result =
         switch (operator) {
           case "+" -> a + b;
