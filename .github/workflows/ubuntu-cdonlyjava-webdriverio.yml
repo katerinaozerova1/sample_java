@@ -136,7 +136,8 @@ jobs:
           SL_TESTPROJECTID: sample-java-wdio
           SL_LABID: ${{ secrets.SL_LAB_ID }}
           SL_PROXY: ${{ secrets.SL_PROXY }}
-          NODE_DEBUG: ''
+          NODE_DEBUG: 'sl'
+          SL_LOG_LEVEL: debug
         run: npx wdio run wdio.conf.mjs
 
       - name: Stop app
