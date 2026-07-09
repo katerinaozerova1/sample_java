@@ -12,14 +12,14 @@ public class CalculatorController {
   public CalculateResponse calculate(@RequestBody CalculateRequest req) {
     double a = req.a();
     double b = req.b();
-    String op = req.op() == null ? "+" : req.op().trim();
+    String operator = req.op() == null ? "+" : req.op().trim();
     double result =
-        switch (op) {
+        switch (operator) {
           case "+" -> a + b;
           case "-" -> a - b;
           case "*" -> a * b;
           case "/" -> b == 0 ? Double.NaN : a / b;
-          default -> throw new IllegalArgumentException("Unsupported operator: " + op);
+          default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
         };
     return new CalculateResponse(result);
   }
