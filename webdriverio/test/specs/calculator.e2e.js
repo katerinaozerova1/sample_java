@@ -97,13 +97,15 @@ describe('CalculatorController via fetch (same origin)', () => {
 });
 
 // Data-driven matrix covering all four operators over a range of inputs.
-// Purpose: pad real UI coverage so the suite runs comfortably past ~2 minutes,
-// which is needed to see a measurable TIA time saving when tests are skipped.
+// Purpose: pad real UI coverage so the suite runs well past ~2 minutes, which
+// is needed to see a measurable TIA time saving when tests are skipped.
 // Mirrors the same matrix used in the Playwright suite (calculator.spec.js):
-// 10 x 8 input grid x 4 operators = 320 matrix tests (+ 8 named tests above).
-// Note: wdio.conf.mjs sets maxInstances: 1, so these run serially — expect
-// this matrix alone to take noticeably longer wall-clock time here than in
-// Playwright, which only reinforces a clearly visible TIA time saving.
+// 10 x 80 input grid x 4 operators = 3200 matrix tests (+ 8 named tests above).
+// This is ~10x the size of the previous 10 x 8 grid. Note: wdio.conf.mjs sets
+// maxInstances: 1, so these run serially — expect this matrix alone to take
+// substantially longer wall-clock time here than in Playwright (potentially
+// well over an hour). Confirm that's actually desired before running it,
+// since it will consume a lot more CI/compute time than before.
 const OPERATORS = [
   { symbol: '+', calc: (a, b) => a + b },
   { symbol: '-', calc: (a, b) => a - b },
@@ -112,7 +114,7 @@ const OPERATORS = [
 ];
 
 const A_VALUES = Array.from({ length: 10 }, (_, i) => i + 1); // 1..10
-const B_VALUES = Array.from({ length: 8 }, (_, i) => i + 1); // 1..8 (0 is covered by the dedicated NaN test above)
+const B_VALUES = Array.from({ length: 80 }, (_, i) => i + 1); // 1..80 (0 is covered by the dedicated NaN test above)
 const PAIRS = A_VALUES.flatMap((a) => B_VALUES.map((b) => [a, b]));
 
 describe('CalculatorController via UI (parameterized matrix)', () => {
