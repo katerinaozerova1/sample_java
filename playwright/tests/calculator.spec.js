@@ -87,3 +87,39 @@ test.describe('CalculatorController via API (same JVM, JSON → records)', () =>
     expect(res.status()).toBe(500);
   });
 });
+
+// Data-driven matrix covering all four operators over a range of inputs.
+// Purpose: pad real UI coverage so the suite runs past ~2 minutes, which is
+// needed to see a measurable TIA time saving when tests are skipped.
+const OPERATORS = [
+  { symbol: '+', calc: (a, b) => a + b },
+  { symbol: '-', calc: (a, b) => a - b },
+  { symbol: '*', calc: (a, b) => a * b },
+  { symbol: '/', calc: (a, b) => (b === 0 ? NaN : a / b) },
+];
+
+const PAIRS = [
+  [1, 2], [3, 4], [5, 6], [7, 8], [9, 10],
+  [11, 12], [13, 14], [15, 16], [17, 18], [19, 20],
+  [2, 7], [4, 9], [6, 11], [8, 13], [10, 15],
+  [12, 17], [14, 19], [16, 21], [18, 23], [20, 25],
+  [1, 10], [2, 20], [3, 30], [4, 40], [5, 50],
+  [6, 60], [7, 70], [8, 80], [9, 90], [10, 100],
+];
+
+test.describe('CalculatorController via UI (parameterized matrix)', () => {
+  for (const op of OPERATORS) {
+    for (const [a, b] of PAIRS) {
+      test(`${a} ${op.symbol} ${b}`, async ({ page }) => {
+        await page.goto('/');
+        await page.getByTestId('input-a').fill(String(a));
+        await page.getByTestId('select-op').selectOption(op.symbol);
+        await page.getByTestId('input-b').fill(String(b));
+        await page.getByTestId('btn-calculate').click();
+        const expected = op.calc(a, b);
+        const expectedText = Number.isNaN(expected) ? 'NaN' : String(expected);
+        await expect(page.getByTestId('result')).toHaveText(expectedText);
+      });
+    }
+  }
+});
