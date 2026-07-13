@@ -144,7 +144,7 @@ jobs:
           SL_LOG_LEVEL: debug
           SL_TOKEN: ${{ inputs.sl_env == 'RIB' && secrets.SL_TOKEN_RIB || secrets.SL_TOKEN }}
           SL_LAB_ID: ${{ secrets.SL_LAB_ID }}
-          SL_TEST_STAGE: playwright
+          SL_TEST_STAGE: playwright-1
           SL_TEST_PROJECT_ID: sample-java-playwright
           SL_BUILD_SESSION_ID: ${{ secrets.SL_BUILD_SESSION_ID }}
           SL_PROXY: ${{ secrets.SL_PROXY }}
