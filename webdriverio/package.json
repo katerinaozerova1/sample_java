@@ -20,5 +20,8 @@
     "sealights-webdriverio-plugin": "^0.1.25",
     "wdio-chromedriver-service": "^8.1.1",
     "webdriverio": "^8.40.6"
+  },
+  "overrides": {
+    "slnodejs": "6.2.24"
   }
 }
