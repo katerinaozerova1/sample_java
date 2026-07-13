@@ -95,3 +95,42 @@ describe('CalculatorController via fetch (same origin)', () => {
     assert.equal(status, 500);
   });
 });
+
+// Data-driven matrix covering all four operators over a range of inputs.
+// Purpose: pad real UI coverage so the suite runs past ~2 minutes, which is
+// needed to see a measurable TIA time saving when tests are skipped.
+// Mirrors the same matrix used in the Playwright suite (calculator.spec.js).
+// Note: wdio.conf.mjs sets maxInstances: 1, so these run serially — expect
+// this matrix alone to take longer wall-clock time here than in Playwright.
+const OPERATORS = [
+  { symbol: '+', calc: (a, b) => a + b },
+  { symbol: '-', calc: (a, b) => a - b },
+  { symbol: '*', calc: (a, b) => a * b },
+  { symbol: '/', calc: (a, b) => (b === 0 ? NaN : a / b) },
+];
+
+const PAIRS = [
+  [1, 2], [3, 4], [5, 6], [7, 8], [9, 10],
+  [11, 12], [13, 14], [15, 16], [17, 18], [19, 20],
+  [2, 7], [4, 9], [6, 11], [8, 13], [10, 15],
+  [12, 17], [14, 19], [16, 21], [18, 23], [20, 25],
+  [1, 10], [2, 20], [3, 30], [4, 40], [5, 50],
+  [6, 60], [7, 70], [8, 80], [9, 90], [10, 100],
+];
+
+describe('CalculatorController via UI (parameterized matrix)', () => {
+  for (const op of OPERATORS) {
+    for (const [a, b] of PAIRS) {
+      it(`${a} ${op.symbol} ${b}`, async () => {
+        await browser.url('/');
+        await $('[data-testid="input-a"]').setValue(String(a));
+        await $('[data-testid="select-op"]').selectByAttribute('value', op.symbol);
+        await $('[data-testid="input-b"]').setValue(String(b));
+        await $('[data-testid="btn-calculate"]').click();
+        const expected = op.calc(a, b);
+        const expectedText = Number.isNaN(expected) ? 'NaN' : String(expected);
+        await expect($('[data-testid="result"]')).toHaveText(expectedText);
+      });
+    }
+  }
+});
