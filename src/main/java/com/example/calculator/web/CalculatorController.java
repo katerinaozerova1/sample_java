@@ -16,8 +16,8 @@ public class CalculatorController {
     double result =
         switch (operator) {
           case "+" -> a + b;
-          case "*" -> a * b;
           case "-" -> a - b;
+          case "*" -> a * b;
           case "/" -> b == 0 ? Double.NaN : a / b;
           default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
         };
