@@ -9,6 +9,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
-    "sealights-playwright-plugin": "^2.0.137"
+    "sealights-playwright-plugin": "^2.0.141"
   }
 }
