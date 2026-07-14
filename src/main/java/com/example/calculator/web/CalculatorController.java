@@ -15,6 +15,7 @@ public class CalculatorController {
     String operator = request.op() == null ? "+" : request.op().trim();
     double result =
         switch (operator) {
+          case "*" -> a * b;
           case "+" -> a + b;
           case "-" -> a - b;
           case "*" -> a * b;
