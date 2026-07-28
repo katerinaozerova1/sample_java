@@ -9,6 +9,8 @@ import {
 
 const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:8080';
 
+const sealightsLauncher = new SealightsLauncher();
+
 export const config = {
   runner: 'local',
   baseUrl,
@@ -37,6 +39,9 @@ export const config = {
     },
   ],
   onPrepare: async () => {
-    await new SealightsLauncher().onPrepare();
+    await sealightsLauncher.onPrepare();
+  },
+  onComplete: async () => {
+    await sealightsLauncher.onComplete();
   },
 };
